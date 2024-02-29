@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   UilCopyAlt,
   UilCheckCircle,
   UilUserPlus,
   UilMessage,
+  UilEditAlt,
+  UilPen,
 } from "@iconscout/react-unicons";
 import { TextareaAutosize } from "@mui/base/TextareaAutosize";
 
@@ -12,14 +14,12 @@ const ChatInterface = ({ roomId, username }) => {
   const [text, setText] = useState("");
   const [messages, setMessages] = useState([]);
 
-  const handleInput = (event) => {
-    // Set the textarea height to auto to allow it to resize based on content
-    event.target.style.height = "auto";
+  const [penPosition, setPenPosition] = useState({ x: 0, y: 0 });
 
-    // Set the textarea height to the scrollHeight, which is the actual height of the content
+  const handleInput = (event) => {
+    event.target.style.height = "auto";
     event.target.style.height = `${event.target.scrollHeight}px`;
 
-    // Update the state with the current text
     setText(event.target.value);
   };
 
@@ -40,9 +40,13 @@ const ChatInterface = ({ roomId, username }) => {
     }
   };
 
+  const handleMouseMove = (e) => {
+    setPenPosition({ x: e.clientX, y: e.clientY });
+  };
+
   return (
-    <div>
-      <div className="relative w-full">
+    <div className="flex">
+      <div className="relative w-1/4 border-2 border-slate-500">
         <header className="border-b border-gray-300 bg-white fixed top-0 z-[99] left-0 w-full">
           <nav>
             <div className="flex flex-row justify-between items-center p-4">
@@ -71,7 +75,7 @@ const ChatInterface = ({ roomId, username }) => {
           </nav>
         </header>
         <div className="w-full">
-          <div className="w-2/3 h-screen m-auto relative">
+          <div className="h-screen m-auto relative">
             {/* Chat Messages */}
             <div className=" p-4 w-full h-[90vh] flex flex-col justify-end items-end">
               {/* Self Messages */}
@@ -94,8 +98,10 @@ const ChatInterface = ({ roomId, username }) => {
             </div>
 
             {/* Input Field and Send Button */}
-            <div className="absolute w-full bottom-0 p-2">
-              <span className="p-2 text-xs font-pop">{username} is typing..</span>
+            <div className="absolute w-full bottom-0 p-2 ">
+              <span className="p-2 text-xs font-pop">
+                {username} is typing..
+              </span>
               <div className="p-2 bg-white rounded-xl flex items-center border">
                 <input
                   type="text"
@@ -112,6 +118,29 @@ const ChatInterface = ({ roomId, username }) => {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+      <div className="w-full h-screen relative" onMouseMove={handleMouseMove}>
+        <canvas
+          className="bg-slate-50 w-full h-screen"
+          onMouseMove={handleMouseMove}
+        ></canvas>
+        <UilPen
+          size="30"
+          className="text-gray-900 absolute top-0 left-0 cursor-pointer"
+        />
+        <div className="absolute z-[99] bottom-5 flex justify-center item-center w-full">
+          <div className="flex w-1/2 bg-slate-300 p-2 rounded-2xl justify-evenly">
+            <UilEditAlt
+              size="30"
+              className="text-gray-400 hover:text-gray-700 transition-colors duration-200 cursor-pointer"
+            />
+            <span className="p-3 rounded-full border-2 cursor-pointer bg-red-500"></span>
+            <span className="p-3 rounded-full border-2 cursor-pointer bg-yellow-400"></span>
+            <span className="p-3 rounded-full border-2 cursor-pointer bg-blue-600"></span>
+            <span className="p-3 rounded-full border-2 cursor-pointer bg-black"></span>
+            <span className="p-3 rounded-full border-2 cursor-pointer bg-green-600"></span>
           </div>
         </div>
       </div>

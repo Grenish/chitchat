@@ -11,7 +11,7 @@ const App = () => {
   };
 
   return (
-    <div>
+    <div className=" h-screen ">
       {roomId && username ? (
         <ChatInterface roomId={roomId} username={username} />
       ) : (
