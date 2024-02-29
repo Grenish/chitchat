@@ -25,12 +25,6 @@ app.get("/", (_, res) => {
   res.send("Hello World!");
 });
 
-// Add this endpoint to generate a new room ID
-app.post("/rooms", (req, res) => {
-  const roomId = uuidv4();
-
-  res.json({ roomId });
-});
 
 io.on("connection", (socket) => {
   console.log("a user connected");
