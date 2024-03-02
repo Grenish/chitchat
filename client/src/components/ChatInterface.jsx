@@ -329,12 +329,12 @@ const ChatInterface = ({ roomId, username }) => {
                     }
                   }}
                 />
-                <button>
+                {/* <button>
                   <UilMicrophone
                     size="30"
                     className="text-gray-400 hover:text-gray-600 transition-colors ease-in-out duration-300 mr-2"
                   />
-                </button>
+                </button> */}
                 <button onClick={sendMessage}>
                   <UilMessage
                     size="30"
