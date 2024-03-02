@@ -212,7 +212,7 @@ const ChatInterface = ({ roomId, username }) => {
                           : "bg-neutral-300 rounded-r-2xl"
                       } mt-2 p-2 rounded-t-2xl flex flex-col`}
                     >
-                      <span className="text-xs text-bold">
+                      <span className="text-xs font-bold">
                         {" "}
                         {message.sender === username ? "You" : message.sender}
                       </span>
