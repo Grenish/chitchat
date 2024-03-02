@@ -3,16 +3,52 @@ import React, { useState } from "react";
 const Start = ({ onStart }) => {
   const [roomId, setRoomId] = useState("");
   const [username, setUsername] = useState("");
+  const [createRoom, setCreateRoom] = useState(false);
+  const [creatingRoom, setCreatingRoom] = useState(false);
 
   const handleStartClick = () => {
-    // Assuming you have some validation checks here
+    onStart(roomId, username);
+  };
 
-    // Pass the data to the parent component
+  const handleCreateRoomClick = async () => {
+    try {
+      // Call your backend API to create a new room
+      const response = await fetch("https://chitchat-uwed.onrender.com/rooms", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username }),
+      });
+
+      if (response.ok) {
+        // The room was created successfully
+        // Get the room ID from the response
+        const { roomId } = await response.json();
+        // Set the room ID in the state
+        setRoomId(roomId);
+        // Start the chat with the new room ID
+        onStart(roomId, username);
+      } else {
+        // The room creation failed
+        console.error("Failed to create room");
+      }
+    } catch (error) {
+      console.error("Failed to create room:", error);
+    }
+  };
+
+  const handleGoBackClick = () => {
+    setCreateRoom(false);
+  };
+
+  const handleJoinClick = async () => {
+    setCreatingRoom(false);
     onStart(roomId, username);
   };
 
   return (
-    <div className="w-full h-screen flex flex-col justify-center items-center px-4 md:px-0 ">
+    <div className="w-full  h-screen flex flex-col justify-center items-center px-4 md:px-0 ">
       <div className="flex flex-col items-center relative">
         <div className="absolute top-14 right-20 z-[-1] p-4 md:p-8 bg-gradient-to-l from-teal-400 to-indigo-400 bolb w-[300px] h-[300px] blur-md" />
         <span className="font-sans text-5xl md:text-6xl font-semibold london bg-gradient-to-r from-indigo-600 to-pink-700 text-transparent bg-clip-text">
@@ -49,6 +85,7 @@ const Start = ({ onStart }) => {
             Join
           </button>
           <button
+            onClick={handleCreateRoomClick}
             className="w-full bg-gradient-to-r from-indigo-600 to-pink-700 text-white font-semibold rounded-xl p-2 mt-2"
             aria-label="Join button"
           >
