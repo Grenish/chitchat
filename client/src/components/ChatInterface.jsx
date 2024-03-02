@@ -1,26 +1,88 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   UilCopyAlt,
   UilCheckCircle,
   UilUserPlus,
   UilMessage,
+  UilMicrophone,
+  UilPlay,
+  UilPause,
+  UilPaperclip,
+  UilCancel,
+  UilImage,
 } from "@iconscout/react-unicons";
-import { TextareaAutosize } from "@mui/base/TextareaAutosize";
+import io from "socket.io-client";
+import socketIOClient from "socket.io-client";
+import * as linkify from "linkifyjs";
+import Linkify from "linkify-react";
 
 const ChatInterface = ({ roomId, username }) => {
   const [copy, setCopy] = useState(false);
   const [text, setText] = useState("");
   const [messages, setMessages] = useState([]);
+  const [socket, setSocket] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewSrc, setPreviewSrc] = useState(null);
+  const [imageData, setImageData] = useState(null);
+  const [preText, setPreText] = useState("");
+  const newMessage = useRef(null);
+  const [userStatus, setUserStatus] = useState("");
+
+  useEffect(() => {
+    const socket = socketIOClient("https://chitchat-uwed.onrender.com");
+
+    socket.on("user connected", ({ username }) => {
+      setUserStatus(`${username} connected`);
+    });
+
+    // Listen for 'user disconnected' event
+    socket.on("user disconnected", ({ username }) => {
+      setUserStatus(`${username} disconnected`);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    // Connect to the server
+    const newSocket = io("https://chitchat-uwed.onrender.com");
+    setSocket(newSocket);
+
+    // Clean up when component unmounts
+    return () => newSocket.close();
+  }, []);
+
+  useEffect(() => {
+    // Listen for incoming messages
+    if (socket) {
+      socket.on("chat message", (msg) => {
+        setMessages((prevMessages) => [...prevMessages, msg]);
+      });
+    }
+    return () => {
+      if (socket) {
+        socket.off("chat message");
+      }
+    };
+  }, [socket]);
 
   const handleInput = (event) => {
-    // Set the textarea height to auto to allow it to resize based on content
     event.target.style.height = "auto";
 
-    // Set the textarea height to the scrollHeight, which is the actual height of the content
     event.target.style.height = `${event.target.scrollHeight}px`;
 
-    // Update the state with the current text
     setText(event.target.value);
+  };
+
+  const handlePreInput = (event) => {
+    event.target.style.height = "auto";
+
+    event.target.style.height = `${event.target.scrollHeight}px`;
+
+    setPreText(event.target.value);
   };
 
   const copyToClipboard = () => {
@@ -33,12 +95,54 @@ const ChatInterface = ({ roomId, username }) => {
   };
 
   const sendMessage = () => {
-    if (text.trim() !== "") {
-      setMessages([...messages, { text, sender: "self" }]);
-
+    if (text.trim() !== "" && socket) {
+      const message = { text, sender: username, image: imageData };
+      socket.emit("chat message", message);
       setText("");
+      setImageData(null);
     }
   };
+
+  const sendPreMessage = () => {
+    if (socket) {
+      const message = { text: preText, sender: username, image: imageData };
+      socket.emit("chat message", message);
+      setPreText("");
+      setImageData(null);
+    }
+  };
+
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+
+    // Check if the file is an image
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file.");
+      return;
+    }
+
+    // Check if the file size is below 1MB
+    if (file.size > 1024 * 1024) {
+      alert("Please select an image file below 1MB.");
+      return;
+    }
+
+    setSelectedFile(file);
+    setPreviewSrc(URL.createObjectURL(file)); // Update previewSrc
+
+    // Read the file and set imageData
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImageData(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  useEffect(() => {
+    if (newMessage.current) {
+      newMessage.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
 
   return (
     <div>
@@ -58,7 +162,6 @@ const ChatInterface = ({ roomId, username }) => {
                   )}
                 </button>
               </div>
-              {/* <div className="">{username}</div> */}
               <div className="flex flex-row items-center">
                 <button className="rounded-full  flex justify-center items-center">
                   <UilUserPlus
@@ -70,40 +173,168 @@ const ChatInterface = ({ roomId, username }) => {
             </div>
           </nav>
         </header>
-        <div className="w-full">
-          <div className="w-2/3 h-screen m-auto relative">
+        <div className="w-full ">
+          <div className="md:w-2/3 w-full h-[93vh] sm:h-screen m-auto relative">
             {/* Chat Messages */}
-            <div className=" p-4 w-full h-[90vh] flex flex-col justify-end items-end">
-              {/* Self Messages */}
-              <div className="flex flex-col justify-end items-end w-full">
-                {messages.map((message, index) => (
+
+            <div className="p-4 pt-16 w-full h-[85vh] sm:h-[90vh] overflow-y-auto">
+              {messages.map((message, index) => (
+                <div
+                  key={index}
+                  className={`flex flex-col justify-end ${
+                    message.sender === username
+                      ? "justify-end"
+                      : "justify-start"
+                  }`}
+                >
+                  {userStatus && (
+                    <div className="text-center">
+                      <span className="bg-slate-200 p-1 text-xs rounded-xl">
+                        {userStatus}
+                      </span>
+                    </div>
+                  )}
+
                   <div
                     key={index}
-                    className="bg-neutral-300 mt-2 p-2 rounded-t-2xl rounded-l-2xl"
+                    className={`flex ${
+                      message.sender === username
+                        ? "justify-end"
+                        : "justify-start"
+                    }`}
                   >
-                    {message.text}
+                    {/* message box */}
+                    <div
+                      ref={newMessage}
+                      className={`${
+                        message.sender === username
+                          ? "bg-neutral-300 rounded-l-2xl"
+                          : "bg-neutral-300 rounded-r-2xl"
+                      } mt-2 p-2 rounded-t-2xl flex flex-col`}
+                    >
+                      <span className="text-xs">
+                        {" "}
+                        {message.sender === username ? "You" : message.sender}
+                      </span>
+                      {message.image && (
+                        <img
+                          src={message.image}
+                          alt="Sent"
+                          className="rounded-lg w-[500px] h-[350px] object-cover"
+                        />
+                      )}
+                      <span>
+                        <Linkify as="p">{message.text}</Linkify>
+                      </span>
+
+                      {/* time */}
+                      <span
+                        className={`text-xs text-gray-400 ${
+                          message.sender === username
+                            ? "text-right"
+                            : "text-left"
+                        }`}
+                      >
+                        <p>
+                          {new Date().toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </span>
+                    </div>
                   </div>
-                ))}
-              </div>
-              {/* Other Messages */}
-              <div className="flex flex-col justify-start items-start w-full">
-                <div className="bg-neutral-300 mt-2 p-2 rounded-t-2xl rounded-r-2xl">
-                  Hello there
                 </div>
-              </div>
+              ))}
             </div>
 
             {/* Input Field and Send Button */}
             <div className="absolute w-full bottom-0 p-2">
-              <span className="p-2 text-xs font-pop">{username} is typing..</span>
-              <div className="p-2 bg-white rounded-xl flex items-center border">
+              {/* <span className="p-2 text-xs font-pop pointer-events-none">
+                {username} is typing..
+              </span> */}
+              <div className="p-2 bg-white rounded-full sm:rounded-xl flex items-center border relative">
+                {previewSrc && (
+                  <div className="absolute w-full sm:w-[500px] flex flex-col bg-rose-500 bottom-16 left-0 rounded-xl p-3">
+                    <img
+                      src={previewSrc}
+                      alt="Preview"
+                      className="rounded-lg object-cover h-[350px]"
+                    />
+                    <div className="">
+                      <input
+                        type="text"
+                        onChange={handlePreInput}
+                        value={preText}
+                        placeholder="Say Hi..."
+                        className="w-full p-2 outline-none bg-transparent"
+                      />
+                    </div>
+                    <div className="flex justify-end items-center mt-2 w-full">
+                      <button
+                        className="flex items-center bg-rose-400 px-2 py-2 rounded-lg mr-5 group"
+                        onClick={() => {
+                          setSelectedFile(null);
+                          setPreviewSrc(null);
+                        }}
+                      >
+                        <span className="mr-3">Cancel</span>
+                        <UilCancel
+                          size="25"
+                          className="text-gray-400 group-hover:text-gray-600 transition-colors ease-in-out duration-300"
+                        />
+                      </button>
+                      <button
+                        className="flex items-center bg-rose-400 px-2 py-2 rounded-lg group"
+                        onClick={() => {
+                          sendPreMessage();
+                          setSelectedFile(null);
+                          setPreviewSrc(null);
+                        }}
+                      >
+                        <span className="mr-3">Send</span>
+                        <UilMessage
+                          size="25"
+                          className="text-gray-400 group-hover:text-gray-600 transition-colors ease-in-out duration-300"
+                        />
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <button
+                  onClick={() => document.getElementById("fileInput").click()}
+                >
+                  <input
+                    type="file"
+                    name="file"
+                    id="fileInput"
+                    hidden
+                    onChange={handleFileChange}
+                  />
+                  <UilImage
+                    size="30"
+                    className="text-gray-400 hover:text-gray-600 transition-colors ease-in-out duration-300 mr-2"
+                  />
+                </button>
                 <input
                   type="text"
                   onChange={handleInput}
                   value={text}
                   placeholder="Say Hi..."
                   className="w-full p-2 outline-none bg-transparent"
+                  onKeyUp={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage();
+                    }
+                  }}
                 />
+                <button>
+                  <UilMicrophone
+                    size="30"
+                    className="text-gray-400 hover:text-gray-600 transition-colors ease-in-out duration-300 mr-2"
+                  />
+                </button>
                 <button onClick={sendMessage}>
                   <UilMessage
                     size="30"
