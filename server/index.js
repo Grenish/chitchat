@@ -42,10 +42,22 @@ app.post("/rooms", (req, res) => {
 io.on("connection", (socket) => {
   console.log("a user connected");
 
+  // When a user connects, send the username to all clients
+  socket.on("user connected", ({ username }) => {
+    io.emit("user connected", { username: username });
+  });
+
+  // When a user disconnects, send the username to all clients
+  socket.on("user disconnected", ({ username }) => {
+    io.emit("user disconnected", { username: username });
+  });
+
+  // When a user sends a chat message, send it to all clients
   socket.on("chat message", (msg) => {
     io.emit("chat message", msg);
   });
 
+  // When a user disconnects, log it
   socket.on("disconnect", () => {
     console.log("user disconnected");
   });
