@@ -4,16 +4,10 @@ import {
   UilCheckCircle,
   UilUserPlus,
   UilMessage,
-  UilMicrophone,
-  UilPlay,
-  UilPause,
-  UilPaperclip,
   UilCancel,
   UilImage,
 } from "@iconscout/react-unicons";
-import io from "socket.io-client";
 import socketIOClient from "socket.io-client";
-import * as linkify from "linkifyjs";
 import Linkify from "linkify-react";
 
 const ChatInterface = ({ roomId, username }) => {
@@ -21,7 +15,6 @@ const ChatInterface = ({ roomId, username }) => {
   const [text, setText] = useState("");
   const [messages, setMessages] = useState([]);
   const [socket, setSocket] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewSrc, setPreviewSrc] = useState(null);
   const [imageData, setImageData] = useState(null);
@@ -30,58 +23,38 @@ const ChatInterface = ({ roomId, username }) => {
   const [userStatus, setUserStatus] = useState("");
 
   useEffect(() => {
-    const socket = socketIOClient("https://chitchat-uwed.onrender.com");
+    // Single socket initialization
+    const newSocket = socketIOClient("https://chitchat-uwed.onrender.com");
+    setSocket(newSocket);
 
-    socket.on("user connected", ({ username }) => {
+    newSocket.on("user connected", ({ username }) => {
       setUserStatus(`${username} connected`);
     });
 
-    // Listen for 'user disconnected' event
-    socket.on("user disconnected", ({ username }) => {
+    newSocket.on("user disconnected", ({ username }) => {
       setUserStatus(`${username} disconnected`);
     });
 
-    return () => {
-      socket.disconnect();
-    };
-  }, []);
-
-  useEffect(() => {
-    // Connect to the server
-    const newSocket = io("https://chitchat-uwed.onrender.com");
-    setSocket(newSocket);
-
-    // Clean up when component unmounts
-    return () => newSocket.close();
-  }, []);
-
-  useEffect(() => {
     // Listen for incoming messages
-    if (socket) {
-      socket.on("chat message", (msg) => {
-        setMessages((prevMessages) => [...prevMessages, msg]);
-      });
-    }
+    newSocket.on("chat message", (msg) => {
+      setMessages((prevMessages) => [...prevMessages, msg]);
+    });
+
+    // Clean up
     return () => {
-      if (socket) {
-        socket.off("chat message");
-      }
+      newSocket.disconnect();
     };
-  }, [socket]);
+  }, []);
 
   const handleInput = (event) => {
     event.target.style.height = "auto";
-
     event.target.style.height = `${event.target.scrollHeight}px`;
-
     setText(event.target.value);
   };
 
   const handlePreInput = (event) => {
     event.target.style.height = "auto";
-
     event.target.style.height = `${event.target.scrollHeight}px`;
-
     setPreText(event.target.value);
   };
 
@@ -115,22 +88,19 @@ const ChatInterface = ({ roomId, username }) => {
   const handleFileChange = (event) => {
     const file = event.target.files[0];
 
-    // Check if the file is an image
     if (!file.type.startsWith("image/")) {
       alert("Please select an image file.");
       return;
     }
 
-    // Check if the file size is below 1MB
     if (file.size > 1024 * 1024) {
       alert("Please select an image file below 1MB.");
       return;
     }
 
     setSelectedFile(file);
-    setPreviewSrc(URL.createObjectURL(file)); // Update previewSrc
+    setPreviewSrc(URL.createObjectURL(file));
 
-    // Read the file and set imageData
     const reader = new FileReader();
     reader.onloadend = () => {
       setImageData(reader.result);
@@ -176,7 +146,6 @@ const ChatInterface = ({ roomId, username }) => {
         <div className="w-full ">
           <div className="md:w-2/3 w-full h-[93vh] sm:h-screen m-auto relative">
             {/* Chat Messages */}
-
             <div className="p-4 pt-16 w-full h-[85vh] sm:h-[90vh] overflow-y-auto">
               {messages.map((message, index) => (
                 <div
@@ -213,7 +182,6 @@ const ChatInterface = ({ roomId, username }) => {
                       } mt-2 p-2 rounded-t-2xl flex flex-col`}
                     >
                       <span className="text-xs font-bold">
-                        {" "}
                         {message.sender === username ? "You" : message.sender}
                       </span>
                       {message.image && (
@@ -250,9 +218,6 @@ const ChatInterface = ({ roomId, username }) => {
 
             {/* Input Field and Send Button */}
             <div className="absolute w-full bottom-0 p-2">
-              {/* <span className="p-2 text-xs font-pop pointer-events-none">
-                {username} is typing..
-              </span> */}
               <div className="p-2 bg-white rounded-full sm:rounded-xl flex items-center border relative">
                 {previewSrc && (
                   <div className="absolute w-full sm:w-[500px] flex flex-col bg-rose-500 bottom-16 left-0 rounded-xl p-3">
@@ -329,12 +294,6 @@ const ChatInterface = ({ roomId, username }) => {
                     }
                   }}
                 />
-                {/* <button>
-                  <UilMicrophone
-                    size="30"
-                    className="text-gray-400 hover:text-gray-600 transition-colors ease-in-out duration-300 mr-2"
-                  />
-                </button> */}
                 <button onClick={sendMessage}>
                   <UilMessage
                     size="30"
