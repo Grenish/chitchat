@@ -20,44 +20,80 @@ server.listen(port, () => {
   console.log(`Server is running on port http://localhost:${port}`);
 });
 
+// Maintain a list of active rooms
+const activeRooms = {};
+
 app.get("/", (_, res) => {
   res.send("Hello World!");
 });
 
 app.post("/rooms", (req, res) => {
-  const { username } = req.body;
+  let { roomID } = req.body;
 
-  // Generate a new room ID
-  const roomId =
-    uuidv4().split("-")[1] +
-    "-" +
-    Math.floor(Math.random() * 1000) +
-    "-" +
-    uuidv4().split("-")[0];
+  // Ensure the roomID is unique
+  if (!roomID) {
+    do {
+      roomID =
+        uuidv4().split("-")[1] +
+        "-" +
+        Math.floor(Math.random() * 1000) +
+        "-" +
+        uuidv4().split("-")[0];
+    } while (activeRooms[roomID]); // Keep generating until we find a unique ID
+  }
 
-  // Respond with the room ID
-  res.json({ roomId });
+  activeRooms[roomID] = true;
+
+  res.json({ roomID });
 });
 
 io.on("connection", (socket) => {
   console.log("a user connected");
 
-  // When a user connects, send the username to all clients
-  socket.on("user connected", ({ username }) => {
-    io.emit("user connected", { username: username });
+  socket.on("user connected", ({ username, roomID }) => {
+    if (!activeRooms[roomID]) {
+      socket.emit("error", "Room does not exist");
+      return;
+    }
+
+    socket.join(roomID);
+
+    io.to(roomID).emit("user connected", { username });
   });
 
-  // When a user disconnects, send the username to all clients
-  socket.on("user disconnected", ({ username }) => {
-    io.emit("user disconnected", { username: username });
+});
+
+io.on("connection", (socket) => {
+  console.log("a user connected");
+
+  socket.on("user connected", ({ username, roomID }) => {
+    if (!activeRooms[roomID]) {
+      socket.emit("error", "Room does not exist");
+      return;
+    }
+
+    socket.join(roomID);
+
+    io.to(roomID).emit("user connected", { username });
   });
 
-  // When a user sends a chat message, send it to all clients
+  socket.on("user disconnected", ({ username, roomID }) => {
+    if (!activeRooms[roomID]) {
+      socket.emit("error", "Room does not exist");
+      return;
+    }
+
+    socket.leave(roomID);
+
+    io.to(roomID).emit("user disconnected", { username });
+  });
+
   socket.on("chat message", (msg) => {
-    io.emit("chat message", msg);
+    const roomID = Object.keys(socket.rooms)[1];
+
+    io.to(roomID).emit("chat message", msg);
   });
 
-  // When a user disconnects, log it
   socket.on("disconnect", () => {
     console.log("user disconnected");
   });
