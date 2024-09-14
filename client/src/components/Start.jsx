@@ -3,8 +3,6 @@ import React, { useState } from "react";
 const Start = ({ onStart }) => {
   const [roomId, setRoomId] = useState("");
   const [username, setUsername] = useState("");
-  const [createRoom, setCreateRoom] = useState(false);
-  const [creatingRoom, setCreatingRoom] = useState(false);
 
   const handleStartClick = () => {
     onStart(roomId, username);
@@ -12,39 +10,24 @@ const Start = ({ onStart }) => {
 
   const handleCreateRoomClick = async () => {
     try {
-      // Call your backend API to create a new room
-      const response = await fetch("https://chitchat-uwed.onrender.com/rooms", {
+      const response = await fetch("http://localhost:5000/rooms", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({ roomId, username }), 
       });
 
       if (response.ok) {
-        // The room was created successfully
-        // Get the room ID from the response
-        const { roomId } = await response.json();
-        // Set the room ID in the state
-        setRoomId(roomId);
-        // Start the chat with the new room ID
-        onStart(roomId, username);
+        const { roomID } = await response.json(); 
+        setRoomId(roomID); 
+        onStart(roomID, username); 
       } else {
-        // The room creation failed
         console.error("Failed to create room");
       }
     } catch (error) {
       console.error("Failed to create room:", error);
     }
-  };
-
-  const handleGoBackClick = () => {
-    setCreateRoom(false);
-  };
-
-  const handleJoinClick = async () => {
-    setCreatingRoom(false);
-    onStart(roomId, username);
   };
 
   return (
