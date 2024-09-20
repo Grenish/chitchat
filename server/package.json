@@ -1,0 +1,30 @@
+{
+  "name": "chitchat-server",
+  "version": "0.0.1",
+  "description": "chitchat server using express and socket",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Grenish/chitchat.git"
+  },
+  "keywords": [
+    "cors",
+    "message"
+  ],
+  "author": "Grenish Rai",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Grenish/chitchat/issues"
+  },
+  "homepage": "https://github.com/Grenish/chitchat#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "nodemon": "^3.1.6",
+    "socket.io": "^4.7.5"
+  }
+}

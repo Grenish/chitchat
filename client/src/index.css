@@ -1,0 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Courgette&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.border1 {
+  border-radius: 68% 32% 41% 59% / 70% 70% 30% 30%;
+}
+
+.border2{
+  border-radius: 85% 15% 9% 91% / 22% 27% 73% 78% ;
+}
