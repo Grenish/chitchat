@@ -1,105 +1,47 @@
-import { useState, useEffect } from "react";
-import ChatMessages from "./components/ChatMessages";
-import TextBox from "./components/TextBox";
-import StartUp from "./page/StartUp";
-
-const getCurrentTimestamp = () => new Date().getTime();
-
-// Time-to-live (TTL) for the messages in milliseconds (2 minutes)
-const MESSAGE_TTL = 2 * 60 * 1000;
-
-function App() {
-  const [messages, setMessages] = useState<string[]>([]);
-  const [timeStamps, setTimeStamps] = useState<string[]>([]);
-  const [messageSenders, setMessageSenders] = useState<string[]>([]); // Track senders of each message
-  const [hasJoined, setHasJoined] = useState<boolean>(false); // Track if user has joined
-  const [userName, setUserName] = useState<string>(""); // Track user's name
-
-  useEffect(() => {
-    const storedMessages = JSON.parse(
-      localStorage.getItem("chatMessages") || "[]"
-    );
-    const storedTimestamps = JSON.parse(
-      localStorage.getItem("chatTimestamps") || "[]"
-    );
-    const storedSenders = JSON.parse(
-      localStorage.getItem("chatMessageSenders") || "[]"
-    );
-    const storedTime = parseInt(
-      localStorage.getItem("chatSavedTime") || "0",
-      10
-    );
-
-    if (
-      storedMessages.length > 0 &&
-      getCurrentTimestamp() - storedTime < MESSAGE_TTL
-    ) {
-      setMessages(storedMessages);
-      setTimeStamps(storedTimestamps);
-      setMessageSenders(storedSenders);
-    }
-  }, []);
-
-  const addMessage = (newMessage: string) => {
-    const currentTime = new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    const newMessages = [...messages, newMessage];
-    const newTimestamps = [...timeStamps, currentTime];
-    const newSenders = [...messageSenders, userName]; // Use the current user's name as sender
-
-    setMessages(newMessages);
-    setTimeStamps(newTimestamps);
-    setMessageSenders(newSenders);
-
-    localStorage.setItem("chatMessages", JSON.stringify(newMessages));
-    localStorage.setItem("chatTimestamps", JSON.stringify(newTimestamps));
-    localStorage.setItem("chatMessageSenders", JSON.stringify(newSenders));
-    localStorage.setItem("chatSavedTime", getCurrentTimestamp().toString());
-  };
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const storedTime = parseInt(
-        localStorage.getItem("chatSavedTime") || "0",
-        10
-      );
-
-      if (getCurrentTimestamp() - storedTime > MESSAGE_TTL) {
-        localStorage.removeItem("chatMessages");
-        localStorage.removeItem("chatTimestamps");
-        localStorage.removeItem("chatMessageSenders");
-        localStorage.removeItem("chatSavedTime");
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleJoin = (name: string) => {
-    setUserName(name);
-    setHasJoined(true); // Set the join status to true when the user joins
-  };
-
+const App = () => {
   return (
-    <div className="bg-dracula-darker-900 h-screen flex flex-col justify-between">
-      {!hasJoined ? (
-        // Show StartUp page if user hasn't joined yet
-        <StartUp onJoin={handleJoin} />
-      ) : (
-        // Show ChatMessages and TextBox if user has joined
-        <>
-          <ChatMessages
-            messages={messages}
-            time={timeStamps}
-            user={userName} // Pass current user's name
-          />
-          <TextBox onSend={addMessage} />
-        </>
-      )}
+    <div className="h-screen">
+      <div className="relative min-h-screen flex items-center justify-center bg-dracula-darker-900 overflow-hidden">
+        {/* LoFi Background Blurs */}
+        <div className="absolute border1 top-10 left-10 w-52 h-52 sm:w-72 sm:h-72 bg-gradient-to-r from-dracula-purple to-dracula-pink rounded-full blur-3xl opacity-30"></div>
+        <div className="absolute border2 bottom-10 right-10 w-52 h-52 sm:w-72 sm:h-72 bg-gradient-to-r from-dracula-cyan to-dracula-green rounded-full blur-3xl opacity-30"></div>
+
+        {/* Main Content */}
+        <div className="relative z-10 text-center  bg-dracula-darkest-700 bg-opacity-70 p-6 sm:p-10 rounded-2xl shadow-2xl backdrop-blur-xl w-full sm:w-2/3 lg:w-1/3 sm:h-full h-screen">
+          <h1 className="text-4xl font-Courgette sm:text-5xl lg:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-dracula-purple to-dracula-pink">
+            ChitChat
+          </h1>
+          <p className="text-sm sm:text-xl capitalize text-dracula-light font-Caveat">
+            Start your way around
+          </p>
+
+          <div className="space-y-4 mt-8">
+            <input
+              type="text"
+              placeholder="Enter Your Name"
+              className="w-full px-3 py-2 sm:px-4 sm:py-2 bg-dracula-darkest-600 text-dracula-darker-800 rounded-lg border-none focus:ring-2 focus:ring-dracula-purple outline-none"
+            />
+            <input
+              type="text"
+              placeholder="Joining Code"
+              className="w-full px-3 py-2 sm:px-4 sm:py-2 bg-dracula-darkest-600 text-dracula-darker-800 rounded-lg border-none focus:ring-2 focus:ring-dracula-purple outline-none"
+            />
+
+            <button
+              className="w-full py-2 sm:py-3 transition-all duration-300 bg-gradient-to-r from-dracula-purple to-dracula-pink text-dracula-darker-900 rounded-md hover:scale-105 hover:shadow-lg"
+            >
+              Join
+            </button>
+            <button
+              className="w-full py-2 sm:py-3 transition-all duration-300 bg-gradient-to-r from-dracula-cyan to-dracula-green text-dracula-darker-900 rounded-md hover:scale-105 hover:shadow-lg"
+            >
+              Create New Room
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
-}
+};
 
 export default App;

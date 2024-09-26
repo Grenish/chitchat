@@ -14,18 +14,24 @@ app.get("/", (req, res) => {
   res.send("Hello, World!");
 });
 
-
 io.on("connection", (socket) => {
-  console.log("A user is connected");
+  console.log("New client connected");
+  activeUsers++;
 
-  socket.on("message", (msg) => {
-    console.log(msg);
+  socket.emit("activeUsers", activeUsers);
+  socket.emit("initialMessages", messages);
 
-    io.emit("Message: ", msg);
+  // Handle a new message
+  socket.on("newMessage", (data) => {
+    messages.push(data);
+    io.emit("message", data); // Broadcast to all clients
   });
 
+  // Handle disconnection
   socket.on("disconnect", () => {
-    console.log("A user is disconnected");
+    console.log("Client disconnected");
+    activeUsers--;
+    io.emit("activeUsers", activeUsers);
   });
 });
 
